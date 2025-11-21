@@ -1,0 +1,61 @@
+services:
+  appwrite:
+    image: appwrite/appwrite:latest
+    container_name: appwrite
+    restart: unless-stopped
+    ports:
+      - "7109:80"   # Map host port 7109 to container port 80 (HTTP)
+      - "7443:443"  # Keep HTTPS default or adjust if you want a custom HTTPS port
+    environment:
+      - _APP_DOMAIN_TARGET=localhost:7109
+      - _APP_DOMAIN=localhost
+      - _APP_ENV=production
+      - _APP_REDIS_HOST=redis
+      - _APP_DB_HOST=mariadb
+      - _APP_DB_PORT=3306
+      - _APP_STORAGE_ENDPOINT=http://storage:9000
+      - _APP_FUNCTIONS_ENDPOINT=http://functions:8080
+    depends_on:
+      - mariadb
+      - redis
+      - storage
+      - functions
+    volumes:
+      - ./appwrite:/storage:rw
+
+  mariadb:
+    image: mariadb:latest
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: examplepassword
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+
+  storage:
+    image: minio/minio
+    restart: unless-stopped
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+
+  functions:
+    image: appwrite/functions:v0.17.0
+    restart: unless-stopped
+    environment:
+      - _APPWRITE_ENDPOINT=http://appwrite/v1
+      - _APPWRITE_PROJECT=your_project_id
+      - _APPWRITE_KEY=your_api_key      
+
+volumes:
+  mariadb_data:
+  minio_data:
+  appwrite:
